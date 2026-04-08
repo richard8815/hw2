@@ -26,8 +26,8 @@ jobs:
           python-version: "3.11"
           cache: pip
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt ruff
+      - name: Install ruff
+        run: pip install ruff
 
       - name: Ruff lint
         run: ruff check app/
