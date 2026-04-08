@@ -12,7 +12,7 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     defaults:
       run:
-        shell: cmd
+        shell: bash
     steps:
       - name: Log in to Docker Hub
         run: docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
@@ -21,13 +21,13 @@ jobs:
         run: docker pull ${{ secrets.DOCKERHUB_USERNAME }}/face-personality-api:latest
 
       - name: Stop existing container
-        run: docker stop face-personality-api || echo "No container to stop"
+        run: docker stop face-personality-api || true
 
       - name: Remove existing container
-        run: docker rm face-personality-api || echo "No container to remove"
+        run: docker rm face-personality-api || true
 
       - name: Run new container
         run: docker run -d --name face-personality-api -p 8000:8000 ${{ secrets.DOCKERHUB_USERNAME }}/face-personality-api:latest
 
       - name: Verify container is running
-        run: docker ps | findstr face-personality-api
+        run: docker ps | grep face-personality-api
