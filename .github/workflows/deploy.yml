@@ -1,0 +1,30 @@
+name: Deploy to Local Server
+
+on:
+  workflow_run:
+    workflows: ["Build and Push Docker Image"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Log in to Docker Hub
+        run: docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Pull latest image
+        run: docker pull ${{ secrets.DOCKERHUB_USERNAME }}/face-personality-api:latest
+
+      - name: Stop existing container
+        run: docker stop face-personality-api || true
+
+      - name: Remove existing container
+        run: docker rm face-personality-api || true
+
+      - name: Run new container
+        run: docker run -d --name face-personality-api -p 8000:8000 ${{ secrets.DOCKERHUB_USERNAME }}/face-personality-api:latest
+
+      - name: Verify container is running
+        run: docker ps | findstr face-personality-api
