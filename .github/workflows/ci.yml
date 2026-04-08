@@ -17,9 +17,11 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: actions/setup-python@v5
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
         with:
           python-version: "3.11"
           cache: pip
@@ -42,7 +44,7 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # ── Buildx 설정 (멀티플랫폼 & 캐시 지원) ──
       - name: Set up Docker Buildx
