@@ -2,6 +2,8 @@ import uuid
 from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from PIL import Image
 
 from app.model import extract_features, generate_summary, predict_personality
@@ -10,6 +12,8 @@ from app.schemas import HealthResponse, PredictionResponse
 UPLOAD_DIR = Path(__file__).resolve().parent.parent / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
 
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+
 ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp"}
 MAX_SIZE_MB = 10
 
@@ -17,6 +21,7 @@ app = FastAPI(
     title="Face Personality API",
     description="얼굴 이미지를 업로드하면 관상학 기반으로 성격을 예측합니다.",
     version="0.1.0",
+    docs_url="/docs",
 )
 
 
@@ -64,6 +69,14 @@ async def predict(file: UploadFile = File(..., description="얼굴 이미지 (JP
         personalities=traits,
         summary=summary,
     )
+
+
+@app.get("/", include_in_schema=False)
+async def index():
+    return FileResponse(STATIC_DIR / "index.html")
+
+
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 관상 분석</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            background: linear-gradient(135deg, #a78bfa, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        header p {
+            color: #9ca3af;
+            font-size: 1rem;
+        }
+
+        /* Upload Area */
+        .upload-area {
+            border: 2px dashed #4b5563;
+            border-radius: 16px;
+            padding: 48px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255,255,255,0.03);
+            position: relative;
+        }
+
+        .upload-area:hover, .upload-area.dragover {
+            border-color: #a78bfa;
+            background: rgba(167,139,250,0.06);
+        }
+
+        .upload-area .icon {
+            font-size: 3rem;
+            margin-bottom: 12px;
+        }
+
+        .upload-area h3 {
+            font-size: 1.1rem;
+            color: #d1d5db;
+            margin-bottom: 6px;
+        }
+
+        .upload-area span {
+            font-size: 0.85rem;
+            color: #6b7280;
+        }
+
+        .upload-area input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        /* Preview */
+        .preview-section {
+            display: none;
+            margin-top: 24px;
+            text-align: center;
+        }
+
+        .preview-section.show { display: block; }
+
+        .preview-wrapper {
+            position: relative;
+            display: inline-block;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+
+        .preview-wrapper img {
+            max-width: 100%;
+            max-height: 360px;
+            display: block;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 32px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #7c3aed, #6366f1);
+            color: #fff;
+        }
+
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(124,58,237,0.4); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.08);
+            color: #d1d5db;
+            border: 1px solid #4b5563;
+        }
+
+        .btn-secondary:hover { background: rgba(255,255,255,0.12); }
+
+        /* Loading */
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 32px;
+        }
+
+        .loading.show { display: block; }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba(167,139,250,0.2);
+            border-top-color: #a78bfa;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading p {
+            color: #9ca3af;
+            font-size: 0.95rem;
+        }
+
+        /* Result */
+        .result-section {
+            display: none;
+            margin-top: 32px;
+        }
+
+        .result-section.show { display: block; }
+
+        .summary-card {
+            background: linear-gradient(135deg, rgba(124,58,237,0.15), rgba(99,102,241,0.1));
+            border: 1px solid rgba(167,139,250,0.2);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .summary-card h2 {
+            font-size: 1.15rem;
+            color: #a78bfa;
+            margin-bottom: 10px;
+        }
+
+        .summary-card p {
+            font-size: 1rem;
+            line-height: 1.7;
+            color: #d1d5db;
+        }
+
+        .traits-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        @media (max-width: 500px) {
+            .traits-grid { grid-template-columns: 1fr; }
+        }
+
+        .trait-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 18px;
+            transition: transform 0.2s;
+        }
+
+        .trait-card:hover { transform: translateY(-2px); }
+
+        .trait-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .trait-name {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #e0e7ff;
+        }
+
+        .trait-score {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #a78bfa;
+        }
+
+        .trait-bar {
+            height: 6px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .trait-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            background: linear-gradient(90deg, #7c3aed, #60a5fa);
+            transition: width 0.8s ease;
+        }
+
+        .trait-desc {
+            font-size: 0.82rem;
+            color: #9ca3af;
+            line-height: 1.5;
+        }
+
+        /* Error */
+        .error-msg {
+            display: none;
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.3);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 24px;
+            text-align: center;
+            color: #fca5a5;
+        }
+
+        .error-msg.show { display: block; }
+
+        .no-face {
+            text-align: center;
+            padding: 32px;
+            color: #fbbf24;
+            font-size: 1.05rem;
+        }
+
+        .no-face .icon { font-size: 2.5rem; margin-bottom: 12px; }
+
+        footer {
+            text-align: center;
+            margin-top: 48px;
+            color: #4b5563;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AI 관상 분석기</h1>
+            <p>얼굴 사진을 올려주시면 AI가 관상을 분석해드립니다</p>
+        </header>
+
+        <div class="upload-area" id="uploadArea">
+            <div class="icon">📸</div>
+            <h3>사진을 드래그하거나 클릭하여 업로드</h3>
+            <span>JPG, PNG, WebP / 최대 10MB</span>
+            <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp">
+        </div>
+
+        <div class="preview-section" id="previewSection">
+            <div class="preview-wrapper">
+                <img id="previewImg" alt="업로드된 사진">
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-primary" id="analyzeBtn">분석하기</button>
+                <button class="btn btn-secondary" id="resetBtn">다시 선택</button>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>AI가 관상을 분석하고 있습니다...</p>
+        </div>
+
+        <div class="error-msg" id="errorMsg"></div>
+
+        <div class="result-section" id="resultSection">
+            <!-- filled by JS -->
+        </div>
+
+        <footer>Face Personality API v0.1.0</footer>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const previewSection = document.getElementById('previewSection');
+        const previewImg = document.getElementById('previewImg');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const loading = document.getElementById('loading');
+        const errorMsg = document.getElementById('errorMsg');
+        const resultSection = document.getElementById('resultSection');
+
+        let selectedFile = null;
+
+        // Drag & drop
+        uploadArea.addEventListener('dragover', e => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+        uploadArea.addEventListener('drop', e => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length) handleFile(fileInput.files[0]);
+        });
+
+        function handleFile(file) {
+            if (!['image/jpeg','image/png','image/webp'].includes(file.type)) {
+                showError('JPG, PNG, WebP 형식의 이미지만 업로드 가능합니다.');
+                return;
+            }
+            if (file.size > 10 * 1024 * 1024) {
+                showError('파일 크기가 10MB를 초과합니다.');
+                return;
+            }
+            selectedFile = file;
+            const reader = new FileReader();
+            reader.onload = e => {
+                previewImg.src = e.target.result;
+                uploadArea.style.display = 'none';
+                previewSection.classList.add('show');
+                resultSection.classList.remove('show');
+                errorMsg.classList.remove('show');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        resetBtn.addEventListener('click', reset);
+
+        function reset() {
+            selectedFile = null;
+            fileInput.value = '';
+            uploadArea.style.display = '';
+            previewSection.classList.remove('show');
+            resultSection.classList.remove('show');
+            loading.classList.remove('show');
+            errorMsg.classList.remove('show');
+        }
+
+        analyzeBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+            analyzeBtn.disabled = true;
+            loading.classList.add('show');
+            resultSection.classList.remove('show');
+            errorMsg.classList.remove('show');
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            try {
+                const res = await fetch('/predict', { method: 'POST', body: formData });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    showError(data.detail || '분석 중 오류가 발생했습니다.');
+                    return;
+                }
+
+                renderResult(data);
+            } catch (err) {
+                showError('서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
+            } finally {
+                analyzeBtn.disabled = false;
+                loading.classList.remove('show');
+            }
+        });
+
+        function showError(msg) {
+            errorMsg.textContent = msg;
+            errorMsg.classList.add('show');
+            loading.classList.remove('show');
+        }
+
+        function renderResult(data) {
+            if (!data.face_detected) {
+                resultSection.innerHTML = `
+                    <div class="no-face">
+                        <div class="icon">😕</div>
+                        <p>얼굴을 감지하지 못했습니다.<br>정면 얼굴이 잘 보이는 사진을 올려주세요.</p>
+                    </div>`;
+                resultSection.classList.add('show');
+                return;
+            }
+
+            const traitsHTML = data.personalities.map(t => `
+                <div class="trait-card">
+                    <div class="trait-header">
+                        <span class="trait-name">${t.trait}</span>
+                        <span class="trait-score">${t.score}점</span>
+                    </div>
+                    <div class="trait-bar">
+                        <div class="trait-bar-fill" style="width: 0%;" data-score="${t.score}"></div>
+                    </div>
+                    <div class="trait-desc">${t.description}</div>
+                </div>
+            `).join('');
+
+            resultSection.innerHTML = `
+                <div class="summary-card">
+                    <h2>분석 결과</h2>
+                    <p>${data.summary}</p>
+                </div>
+                <div class="traits-grid">${traitsHTML}</div>
+                <div class="btn-row" style="margin-top:24px;">
+                    <button class="btn btn-secondary" onclick="reset()">다른 사진 분석하기</button>
+                </div>
+            `;
+            resultSection.classList.add('show');
+
+            // Animate bars
+            requestAnimationFrame(() => {
+                document.querySelectorAll('.trait-bar-fill').forEach(bar => {
+                    bar.style.width = bar.dataset.score + '%';
+                });
+            });
+        }
+    </script>
+</body>
+</html>
