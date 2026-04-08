@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image
 
-from app.model import extract_features, generate_summary, predict_personality
+from app.model import extract_features, generate_summary, predict_gender, predict_personality
 from app.schemas import HealthResponse, PredictionResponse
 
 UPLOAD_DIR = Path(__file__).resolve().parent.parent / "uploads"
@@ -20,7 +20,7 @@ MAX_SIZE_MB = 10
 app = FastAPI(
     title="Face Personality API",
     description="얼굴 이미지를 업로드하면 관상학 기반으로 성격을 예측합니다.",
-    version="0.1.0",
+    version="0.2.0",
     docs_url="/docs",
 )
 
@@ -59,6 +59,7 @@ async def predict(file: UploadFile = File(..., description="얼굴 이미지 (JP
             summary="얼굴을 감지하지 못했습니다. 정면 얼굴이 잘 보이는 사진을 올려주세요.",
         )
 
+    gender = predict_gender(features)
     traits = predict_personality(features)
     summary = generate_summary(traits)
 
@@ -66,6 +67,7 @@ async def predict(file: UploadFile = File(..., description="얼굴 이미지 (JP
         success=True,
         face_detected=True,
         features=features,
+        gender=gender,
         personalities=traits,
         summary=summary,
     )

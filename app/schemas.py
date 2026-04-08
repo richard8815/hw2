@@ -16,10 +16,17 @@ class PersonalityTrait(BaseModel):
     description: str
 
 
+class GenderResult(BaseModel):
+    gender: str                   # "남성" 또는 "여성"
+    confidence: float             # 0~100 신뢰도
+    description: str
+
+
 class PredictionResponse(BaseModel):
     success: bool
     face_detected: bool
     features: FacialFeatures | None = None
+    gender: GenderResult | None = None
     personalities: list[PersonalityTrait] = []
     summary: str = ""
 

@@ -262,6 +262,39 @@
 
         .error-msg.show { display: block; }
 
+        .gender-card {
+            background: linear-gradient(135deg, rgba(236,72,153,0.12), rgba(59,130,246,0.12));
+            border: 1px solid rgba(167,139,250,0.2);
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .gender-icon {
+            font-size: 2.4rem;
+            line-height: 1;
+        }
+
+        .gender-info h3 {
+            font-size: 1.15rem;
+            color: #e0e7ff;
+            margin-bottom: 4px;
+        }
+
+        .gender-info .confidence {
+            font-size: 0.85rem;
+            color: #a78bfa;
+            margin-bottom: 4px;
+        }
+
+        .gender-info .desc {
+            font-size: 0.82rem;
+            color: #9ca3af;
+        }
+
         .no-face {
             text-align: center;
             padding: 32px;
@@ -314,7 +347,7 @@
             <!-- filled by JS -->
         </div>
 
-        <footer>Face Personality API v0.1.0</footer>
+        <footer>Face Personality API v0.2.0</footer>
     </div>
 
     <script>
@@ -437,9 +470,21 @@
                 </div>
             `).join('');
 
+            const genderHTML = data.gender ? `
+                <div class="gender-card">
+                    <div class="gender-icon">${data.gender.gender === '남성' ? '👨' : '👩'}</div>
+                    <div class="gender-info">
+                        <h3>추정 성별: ${data.gender.gender}</h3>
+                        <div class="confidence">신뢰도 ${data.gender.confidence}%</div>
+                        <div class="desc">${data.gender.description}</div>
+                    </div>
+                </div>
+            ` : '';
+
             resultSection.innerHTML = `
+                ${genderHTML}
                 <div class="summary-card">
-                    <h2>분석 결과</h2>
+                    <h2>관상 분석 결과</h2>
                     <p>${data.summary}</p>
                 </div>
                 <div class="traits-grid">${traitsHTML}</div>

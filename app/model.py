@@ -3,7 +3,7 @@ import mediapipe as mp
 import numpy as np
 from PIL import Image
 
-from app.schemas import FacialFeatures, PersonalityTrait
+from app.schemas import FacialFeatures, GenderResult, PersonalityTrait
 
 mp_face_mesh = mp.solutions.face_mesh
 
@@ -76,6 +76,79 @@ def extract_features(image: Image.Image) -> FacialFeatures | None:
         jaw_width_ratio=round(jaw_width / face_width, 3),
         forehead_ratio=round(forehead_height / face_height, 3),
     )
+
+
+def predict_gender(features: FacialFeatures) -> GenderResult:
+    """얼굴 비율 기반으로 성별을 추정한다.
+
+    관상학·인체측정학 연구에 따르면:
+    - 남성: 넓은 턱(jaw_width_ratio 높음), 낮은 이마 비율, 넓은 얼굴 비율
+    - 여성: 좁은 턱, 높은 이마 비율, 좁은 얼굴 비율, 큰 눈 간격
+    """
+    male_score = 0.0
+
+    # 턱 너비 — 남성이 일반적으로 넓음
+    if features.jaw_width_ratio > 0.68:
+        male_score += 20
+    elif features.jaw_width_ratio > 0.62:
+        male_score += 10
+    else:
+        male_score -= 15
+
+    # 얼굴 가로세로 비율 — 남성이 넓은 경향
+    if features.face_width_ratio > 0.78:
+        male_score += 18
+    elif features.face_width_ratio > 0.72:
+        male_score += 8
+    else:
+        male_score -= 12
+
+    # 이마 비율 — 여성이 이마가 넓은 경향
+    if features.forehead_ratio > 0.24:
+        male_score -= 15
+    elif features.forehead_ratio > 0.20:
+        male_score -= 5
+    else:
+        male_score += 12
+
+    # 눈 간격 — 여성이 넓은 경향
+    if features.eye_distance_ratio > 0.30:
+        male_score -= 12
+    elif features.eye_distance_ratio > 0.26:
+        male_score -= 3
+    else:
+        male_score += 10
+
+    # 입술 두께 — 여성이 두꺼운 경향
+    if features.lip_thickness_ratio > 0.07:
+        male_score -= 10
+    else:
+        male_score += 8
+
+    # 코 길이 — 남성이 긴 경향
+    if features.nose_length_ratio > 0.20:
+        male_score += 12
+    elif features.nose_length_ratio > 0.16:
+        male_score += 4
+    else:
+        male_score -= 8
+
+    # 점수를 신뢰도(0~100)로 변환
+    confidence = min(abs(male_score) * 1.2 + 50, 95)
+    confidence = round(confidence, 1)
+
+    if male_score >= 0:
+        return GenderResult(
+            gender="남성",
+            confidence=confidence,
+            description="얼굴의 골격 비율, 턱선, 코 길이 등을 종합 분석한 결과입니다.",
+        )
+    else:
+        return GenderResult(
+            gender="여성",
+            confidence=confidence,
+            description="이마 비율, 눈 간격, 입술 두께 등을 종합 분석한 결과입니다.",
+        )
 
 
 def predict_personality(features: FacialFeatures) -> list[PersonalityTrait]:
